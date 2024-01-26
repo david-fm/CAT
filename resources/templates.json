@@ -1,0 +1,114 @@
+[  
+    {  
+        "fileName": "MercadonaSm.png",
+        "blocks": [
+            {
+                "type": "text",
+                "pos": [
+                    117,
+                    584
+                ]
+            },
+            {
+                "type": "price",
+                "pos": [
+                    770,
+                    584
+                ]
+            },
+            {
+                "type": "quantity",
+                "pos": [
+                    57,
+                    584
+                ]
+            },
+            {
+                "type": "text",
+                "pos": [
+                    117,
+                    622
+                ]
+            },
+            {
+                "type": "price",
+                "pos": [
+                    770,
+                    622
+                ]
+            },
+            {
+                "type": "quantity",
+                "pos": [
+                    57,
+                    622
+                ]
+            },
+            {
+                "type": "price",
+                "pos": [
+                    413,
+                    807
+                ]
+            },
+            {
+                "type": "percentage",
+                "pos": [
+                    145,
+                    807
+                ]
+            },
+            {
+                "type": "price",
+                "pos": [
+                    682,
+                    807
+                ]
+            },
+            {
+                "type": "price",
+                "pos": [
+                    413,
+                    845
+                ]
+            },
+            {
+                "type": "percentage",
+                "pos": [
+                    145,
+                    845
+                ]
+            },
+            {
+                "type": "price",
+                "pos": [
+                    682,
+                    845
+                ]
+            },
+            {
+                "type": "price",
+                "pos": [
+                    413,
+                    876
+                ]
+            },
+            {
+                "type": "price",
+                "pos": [
+                    682,
+                    883
+                ]
+            },
+            {
+                "type": "price",
+                "pos": [
+                    770,
+                    669
+                ]
+            }
+
+        ]
+    }
+
+]

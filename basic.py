@@ -3,6 +3,7 @@ from random import randint
 from PIL import ImageFont, ImageDraw, Image
 
 TEXTS_SAMPLE = ["Carne", "Pescado", "Verdura", "Fruta", "Pan", "Bebida", "Lacteos", "Higiene", "Limpieza", "Otros"]
+TYPES = ["text", "price", "quantity", "percentage"]
 
 # TODO : Search for a database of products for the text samples
 # TODO IMPROVEMENT: Total and subtotal blocks should be calculated from prices and percentages blocks.
@@ -10,23 +11,37 @@ TEXTS_SAMPLE = ["Carne", "Pescado", "Verdura", "Fruta", "Pan", "Bebida", "Lacteo
 class Block:
     """A block is a rectangle in the image that contains text."""
     def __init__(self, position, type):
-        if position.__class__ != tuple:
-            raise TypeError("position must be a tuple")
+        if position.__class__ != tuple and type in TYPES:
+            raise TypeError("position must be a tuple or a list")
+        elif type not in TYPES and position.__class__ != list:
+            raise TypeError("position must be a tuple or a list")
+        
+        if type.__class__ != str:
+            raise TypeError("type must be a string")
+        
         self.position = position
         self.type = type
+        if type in TYPES:
+            self.text, self.value = self.initialize_text()
+        else:
+            self.text = self.value = type
     
-    @property
-    def text(self):
+    def initialize_text(self):
         """Return a random text depending on the type of the block."""
         if self.type == "text":
-            return TEXTS_SAMPLE[randint(0, len(TEXTS_SAMPLE)-1)]
+            return TEXTS_SAMPLE[randint(0, len(TEXTS_SAMPLE)-1)], None
         elif self.type == "price":
             # Return a random price between 00,00 and 99,99
-            return str(randint(0, 99)) + "," + str(randint(0, 99))
+            integerpart = randint(0, 99)
+            decimalpart = randint(0, 99)
+            value = float(str(integerpart) + "." + str(decimalpart))
+            return str(integerpart) + "," + str(decimalpart), value
         elif self.type == "quantity":
-            return str(randint(1, 10))
+            value = randint(1, 10)
+            return str(value), value
         elif self.type == "percentage":
-            return str(randint(0, 100)) + "%"
+            value = randint(0, 100)
+            return str(value) + "%", value
         return self.type
 
     def __repr__(self):
@@ -58,7 +73,12 @@ class TicketModifier:
         modified_image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         pil_image = Image.fromarray(modified_image_rgb)
         for block in blocks:
-            add_text_to_image(pil_image, block.text, block.position, font_path, font_size)
+            if block.type not in TYPES:
+                for i in range(len(block.position)):
+                    position = block.position[i]
+                    add_text_to_image(pil_image, block.text, position, font_path, font_size)
+            else:
+                add_text_to_image(pil_image, block.text, block.position, font_path, font_size)
         return pil_image
     
     def show_image(self, image):

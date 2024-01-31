@@ -1,115 +1,102 @@
 [  
     {  
+        "name": "sm",
         "fileName": "MercadonaSm.png",
-        "blocks": [
+        "menu": [
             {
-                "type": "text",
-                "pos": [
+                "nm": [
                     117,
                     584
-                ]
-            },
-            {
-                "type": "price",
-                "pos": [
-                    770,
-                    584
-                ]
-            },
-            {
-                "type": "quantity",
-                "pos": [
-                    57,
-                    584
-                ]
-            },
-            {
-                "type": "text",
-                "pos": [
-                    117,
-                    622
-                ]
-            },
-            {
-                "type": "price",
-                "pos": [
-                    770,
-                    622
-                ]
-            },
-            {
-                "type": "quantity",
-                "pos": [
-                    57,
-                    622
-                ]
-            },
-            {
-                "type": "price",
-                "pos": [
-                    413,
-                    807
-                ]
-            },
-            {
-                "type": "percentage",
-                "pos": [
-                    145,
-                    807
-                ]
-            },
-            {
-                "type": "price",
-                "pos": [
-                    682,
-                    807
-                ]
-            },
-            {
-                "type": "price",
-                "pos": [
-                    413,
-                    845
-                ]
-            },
-            {
-                "type": "percentage",
-                "pos": [
-                    145,
-                    845
-                ]
-            },
-            {
-                "type": "price",
-                "pos": [
-                    682,
-                    845
-                ]
-            },
-            {
-                "type": "total",
-                "pos": [
-                    [
-                        770,
-                        669
-                    ],
-                    [
-                        770,
-                        700
-                    ]
                 ],
-                
-                "tax": [
-                        682,
-                        876
-                    ],
-                
-                "subtotal":[
-                        413,
-                        876
-                    ]
-            }
+                "price": [
+                    770,
+                    584
+                ],
+                "cnt": [
+                    57,
+                    584
+                ]
 
+            },
+            {
+                "nm": [
+                    117,
+                    622
+                ],
+                "price": [
+                    770,
+                    622
+                ],
+                "cnt": [
+                    57,
+                    622
+                ]
+            }
+        ],
+        "sub_total":{
+            "tax": [
+                682,
+                876
+            ],
+            "subtotal":[
+                413,
+                876
+            ]
+        },
+        "total": [
+            [
+                770,
+                669
+            ],
+            [
+                770,
+                700
+            ]
+        ],
+        "extra": [
+            {
+                "type": "percentage",
+                "pos": [
+                    145,
+                    807
+                ]
+            },
+            {
+                "type": "price",
+                "pos": [
+                    682,
+                    807
+                ]
+            },
+
+            {
+                "type": "price",
+                "pos": [
+                    413,
+                    807
+                ]
+            },
+            {
+                "type": "percentage",
+                "pos": [
+                    145,
+                    845
+                ]
+            },
+            {
+                "type": "price",
+                "pos": [
+                    413,
+                    845
+                ]
+            },
+            {
+                "type": "price",
+                "pos": [
+                    682,
+                    845
+                ]
+            }
         ]
     }
 

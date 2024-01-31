@@ -1,16 +1,21 @@
 import cv2
+import os
 from random import randint
 from PIL import ImageFont, ImageDraw, Image
 
 TEXTS_SAMPLE = ["Carne", "Pescado", "Verdura", "Fruta", "Pan", "Bebida", "Lacteos", "Higiene", "Limpieza", "Otros"]
 TYPES = ["text", "price", "quantity", "percentage"]
 
+FILE_PATH = os.path.dirname(__file__)
+IMAGE_PATH = os.path.join(FILE_PATH, 'resources', 'results', 'images')
+
+
 # TODO : Search for a database of products for the text samples
 # TODO IMPROVEMENT: Total and subtotal blocks should be calculated from prices and percentages blocks.
 
 class Block:
     """A block is a rectangle in the image that contains text."""
-    def __init__(self, position, type):
+    def __init__(self, position: tuple, type: str):
         if position.__class__ != tuple and type in TYPES:
             raise TypeError("position must be a tuple or a list")
         elif type not in TYPES and position.__class__ != list:
@@ -42,13 +47,14 @@ class Block:
         elif self.type == "percentage":
             value = randint(0, 100)
             return str(value) + "%", value
-        return self.type
+        else:
+            raise ValueError("Invalid type")
 
     def __repr__(self):
         return f"Block({self.position}, {self.type})"
 
 
-def add_text_to_image( image, text, position, font_path, font_size=30):
+def add_text_to_image( image: Image, text: str, position: tuple, font_path: str, font_size: int=30):
         
         font = ImageFont.truetype(font_path, font_size)
         img = ImageDraw.Draw(image)
@@ -58,10 +64,10 @@ def add_text_to_image( image, text, position, font_path, font_size=30):
 class TicketModifier:
     """This class is used to modify the ticket image."""
 
-    def __init__(self, image_path):
+    def __init__(self, image_path: str):
         self.image_path = image_path
     
-    def modify_image(self, blocks, font_path, font_size=30):
+    def modify_image(self, blocks:[Block], font_path:str, font_size:int=30):
         """Modify the image with the given blocks.
         
         Keyword arguments:
@@ -81,7 +87,7 @@ class TicketModifier:
                 add_text_to_image(pil_image, block.text, block.position, font_path, font_size)
         return pil_image
     
-    def show_image(self, image):
+    def show_image(self, image: Image):
         """Show the image created by modify_image."""
         import matplotlib.pyplot as plt
 
@@ -89,4 +95,7 @@ class TicketModifier:
         plt.axis("off")
         plt.show()
 
-    
+    def save_image(self, image: Image, image_name:str):
+        """Save an image to the ground truth folder"""
+        path = os.path.join(IMAGE_PATH, image_name+".jpg")
+        image.save(path)

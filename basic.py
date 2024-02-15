@@ -7,7 +7,7 @@ TEXTS_SAMPLE = ["Carne", "Pescado", "Verdura", "Fruta", "Pan", "Bebida", "Lacteo
 TYPES = ["text", "price", "quantity", "percentage"]
 
 FILE_PATH = os.path.dirname(__file__)
-IMAGE_PATH = os.path.join(FILE_PATH, 'resources', 'results', 'images')
+IMAGE_PATH = os.path.join(FILE_PATH, 'resources', 'results')
 
 
 # TODO : Search for a database of products for the text samples

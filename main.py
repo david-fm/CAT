@@ -8,6 +8,8 @@ PATH = os.path.dirname(__file__)
 FONTS = os.path.join(PATH, 'resources', 'fonts')
 IMAGES = os.path.join(PATH, 'resources', 'ticketTemplateImages')
 TEMPLATES = os.path.join(PATH, 'resources', 'templates.json')
+RESULTS = os.path.join(PATH, 'resources', 'results')
+
 
 async def create_ticket(filename, blocks, output_image_name):
     image_path = os.path.join(IMAGES, filename)
@@ -17,7 +19,7 @@ async def create_ticket(filename, blocks, output_image_name):
     ticket.save_image(ticket_image,output_image_name)
 
 if __name__ == "__main__":
-    templates = read_template(TEMPLATES)
+    templates = read_template(TEMPLATES, result_path=RESULTS)
     fonts = os.listdir(FONTS)
     seed(3201)
     for filename, blocks, output_image_name in templates:

@@ -4,9 +4,9 @@ from basic import Block
 from json_classes import *
 
 FILE_PATH = os.path.dirname(__file__)
-GT_PATH = os.path.join(FILE_PATH, 'resources', 'results', 'ground_truths')
+IMAGES = os.path.join(FILE_PATH, 'resources', 'results', 'images')
 
-def read_template(template_path, example_per_template=1000):
+def read_template(template_path, example_per_template=1000, result_path=IMAGES):
     """Read a .json templates file and return a list of tuples (image ,[blocks...])"""
     with open(template_path) as f:
         templates = json.load(f)
@@ -62,10 +62,11 @@ def read_template(template_path, example_per_template=1000):
             json_gt = json.dumps(gt, default=lambda o: o.__dict__, indent=4)
             # save ground truth to file
             template_name = template.get('name')
-            file_name = template_name+str(i)+'_gtruth.json'
-            with open(os.path.join(GT_PATH,file_name), 'w') as f:
-                f.write(json_gt)
-
+            image_file_name = template_name+str(i)+'.jpg'
+            text = json.loads(json_gt)
+            metadata = json.dumps({'text': text, 'file_name': image_file_name})
+            with open(os.path.join(result_path,'metadata.jsonl'), 'a') as f:
+                f.write(metadata+'\n')
 
             extra = template.get('extra')
             for item in extra:

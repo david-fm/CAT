@@ -160,5 +160,4 @@ cython_debug/
 #.idea/
 
 # specific folders of the project
-resources/results/ground_truths/*
-resources/results/images/*
+resources/results/*

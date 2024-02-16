@@ -2,12 +2,22 @@ import json
 import os
 from basic import Block
 from json_classes import *
+from PIL import Image
 
 FILE_PATH = os.path.dirname(__file__)
 IMAGES = os.path.join(FILE_PATH, 'resources', 'results', 'images')
 
 def read_template(template_path, example_per_template=1000, result_path=IMAGES):
-    """Read a .json templates file and return a list of tuples (image ,[blocks...])"""
+    """Read a .json templates file and return a list of tuples (image ,[blocks...])
+    
+    Template file indicates info about the tickets image templates to
+    generate. 
+    
+    Args:
+    - template_path: str, path to the .json file with the templates
+    - example_per_template: int, number of examples to generate per template
+    - result_path: str, path to save the metadata.jsonl file with the ground truth"""
+
     with open(template_path) as f:
         templates = json.load(f)
     to_return = []
@@ -79,4 +89,3 @@ def read_template(template_path, example_per_template=1000, result_path=IMAGES):
             to_return.append((image_path, final_blocks, template_name+str(i)))
 
     return to_return
-

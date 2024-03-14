@@ -7,6 +7,9 @@ import numpy as np
 import numpy.typing as npt
 import random
 from scipy import ndimage
+from typing import List
+from polynomials import polynomialModel, lPolynomial2nlPolynomial, maskFromPolygons, pt
+
 
 MatLike = npt.NDArray[np.uint8]
 
@@ -16,13 +19,37 @@ TYPES = ["text", "price", "quantity", "percentage"]
 FILE_PATH = os.path.dirname(__file__)
 IMAGE_PATH = os.path.join(FILE_PATH, 'resources', 'results')
 
+class Text:
+    def __init__(self, path:str, max_words:int=10, min_words:int=5, max_length:int=22):
+        '''Read a text file and store it in memory
 
-# TODO : Search for a database of products for the text samples
+        Args:
+        - path: str, the path to the text file
+        - max_length: int, the maximum length of the text to be gotten from the file
+        - min_length: int, the minimum length of the text to be gotten from the file
+        
+        '''
+        self.max_words = max_words
+        self.min_words = min_words
+        self.max_length = max_length
+        self.path = Path(path)
+        with open(self.path, "r") as file:
+            self.text = file.read().split(" ")
+    
+    def get_random_text(self):
+        '''Return a random piece of text from the text file'''
+        start = randint(0, len(self.text)-self.max_words)
+        end = randint(self.min_words, self.max_words)
+
+        text = " ".join(self.text[start:start+end])
+        taken = min(self.max_length, len(text))
+        return text[:taken]
+
 # TODO IMPROVEMENT: Total and subtotal blocks should be calculated from prices and percentages blocks.
 
 class Block:
     """A block is a rectangle in the image that contains text."""
-    def __init__(self, position: tuple, type: str):
+    def __init__(self, position: tuple, type: str, text_init:Text=None):
         if position.__class__ != tuple and type in TYPES:
             raise TypeError("position must be a tuple or a list")
         elif type not in TYPES and position.__class__ != list:
@@ -34,13 +61,16 @@ class Block:
         self.position = position
         self.type = type
         if type in TYPES:
-            self.text, self.value = self.initialize_text()
+            self.text, self.value = self.initialize_text(text_init)
         else:
             self.text = self.value = type
     
-    def initialize_text(self):
+    def initialize_text(self, text_init:Text=None):
         """Return a random text depending on the type of the block."""
         if self.type == "text":
+            if text_init:
+                return text_init.get_random_text(), None
+            
             return TEXTS_SAMPLE[randint(0, len(TEXTS_SAMPLE)-1)], None
         elif self.type == "price":
             # Return a random price between 00,00 and 99,99
@@ -67,6 +97,10 @@ def add_text_to_image( image: Image, text: str, position: tuple, font_path: str,
         img = ImageDraw.Draw(image)
         img.text(position, text, (0,0,0), font=font)
 
+def random_radius(upper_limit: int, lower_limit: int) -> int:
+            """Return a random radius"""
+            to_return = randint(upper_limit, lower_limit if lower_limit % 2 == 0 else lower_limit - 1) 
+            return to_return if to_return % 2 == 0 else to_return + 1
 
 class TicketModifier:
     """This class is used to modify the ticket image."""
@@ -74,7 +108,7 @@ class TicketModifier:
     def __init__(self, image_path: str):
         self.image_path = image_path
     
-    def modify_image(self, blocks:[Block], font_path:str, font_size:int=30):
+    def modify_image(self, blocks:List[Block], font_path:str, font_size:int=30):
         """Modify the image with the given blocks.
         
         Keyword arguments:
@@ -107,11 +141,35 @@ class TicketModifier:
     def cv2_to_pil(image):
         """Convert a cv2 image to a PIL image."""
         return Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
-    
+
     @staticmethod
     def pil_to_cv2(image):
         """Convert a PIL image to a cv2 image."""
         return cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
+    
+    @staticmethod
+    def applyGaussianNoise(image: MatLike):
+        """Create a mask and apply gaussian noise to the ticket"""
+
+        polynomials = [] # List of polynomials
+        number_of_polynomials = randint(0, 5)
+        for i in range(number_of_polynomials):
+            center = pt(randint(0, image.shape[0]), randint(0, image.shape[1]))
+            radii = [random_radius(50, 200) for i in range(randint(2, 10))]
+            linear = polynomialModel(center, radii, 15)
+            polynomials.append(lPolynomial2nlPolynomial(linear))
+        
+        size = (image.shape[0], image.shape[1])
+        masks = [maskFromPolygons([np.array(poly, np.int32)],size) for poly in polynomials]
+        # extend the mask to 3 channels
+        masks = [np.stack([mask,mask,mask], axis=-1) for mask in masks]
+        gaussianApplied = image.copy()
+        gaussianApplied = cv2.GaussianBlur(gaussianApplied, (9,9), 10)
+        for mask in masks:
+            image = np.where(mask == 255, gaussianApplied, image)
+        
+        return image
+
 
     @staticmethod
     def rotateTicket(image:MatLike, pixels_max_movement:int=50):
@@ -156,7 +214,7 @@ class TicketModifier:
             ]
         )
 
-        print(good_points)
+        #print(good_points)
 
         mask = cv2.fillPoly(mask, [good_points.astype(np.int32)], (255, 255, 255))
         
@@ -234,3 +292,21 @@ class TicketModifier:
         """Save an image to the ground truth folder"""
         path = os.path.join(IMAGE_PATH, image_name+".jpg")
         image.save(path)
+
+class TicketsBackgrounds:
+    def __init__(self, path: str):
+        path = Path(path)
+        self.path = path
+        backgrounds = list(self.path.glob('*.jpg'))
+        self.backgrounds = [cv2.imread(str(background)) for background in backgrounds]
+    
+    def applyRandomBackground(self, image:MatLike):
+        """Apply a random background to the image"""
+        background = self.backgrounds[randint(0, len(self.backgrounds)-1)]
+        background = cv2.resize(background, (image.shape[1], image.shape[0]))
+        # Apply the background with a random alpha channel
+        alpha = randint(70, 98) / 100
+        return cv2.addWeighted(image, alpha, background, 1-alpha, 0)
+
+
+        

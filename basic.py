@@ -11,6 +11,7 @@ from typing import List
 from polynomials import polynomialModel, lPolynomial2nlPolynomial, maskFromPolygons, pt
 
 
+
 MatLike = npt.NDArray[np.uint8]
 
 TEXTS_SAMPLE = ["Carne", "Pescado", "Verdura", "Fruta", "Pan", "Bebida", "Lacteos", "Higiene", "Limpieza", "Otros"]
@@ -215,85 +216,18 @@ class TicketModifier:
         )
 
         #print(good_points)
-
-        mask = cv2.fillPoly(mask, [good_points.astype(np.int32)], (255, 255, 255))
-        
+        mask = cv2.fillPoly(mask, [good_points.astype(np.int32)], (255,255, 255))
         mask = Image.fromarray(mask).convert("L")
 
         return mask
-
-    @staticmethod
-    def positionTicketOnBackground(background, ticket):
-        """Return the center position to place a ticket on a background image without overflows"""
-
-        x = (background.width - ticket.width) // 2
-        y = (background.height - ticket.height) // 2
-        return x, y
-
-    @staticmethod
-    def addTicketToBackground(background: Image, ticket: Image, final_points, x, y):
-        """Add a ticket to a background image
-        
-        Args:
-        - background: PIL.Image, the background image
-        - ticket: PIL.Image, the ticket image
-        - final_points: npt.NDArray[np.float32], the final points of the ticket,
-        if rotated with TicketModifier.rotateTicket
-        - x: int, x position to place the ticket
-        - y: int, y position to place the ticket
-        """
-        background_copy = background.copy()
-        mask = TicketModifier.createMask(
-            ticket, 
-            final_points)
-        
-
-        background_copy.paste(im=ticket, box=(x, y), mask=mask)
-        return background_copy
-    
-    def addBackground(self, pil_image: Image, backgrounds_path: Path, final_points: npt.NDArray[np.float32]):
-        """Add a random background to the image."""
-
-        # First we pick a random background from the backgrounds folder
-
-        path = Path(backgrounds_path)
-        backgrounds = list(path.glob('*.png'))
-        selected = str(backgrounds[randint(0, len(backgrounds)-1)])
-
-        background = cv2.imread(selected)
-        background_rgb = cv2.cvtColor(
-            background, 
-            cv2.COLOR_BGR2RGB)
-        
-        background = Image.fromarray(background_rgb)
-
-        # Now resize the ticket to a random size between 0.5 and 1
-
-        width, height = pil_image.size
-        factor = randint(4, 8) / 10
-        pil_image = pil_image.resize((int(width*factor), int(height*factor)))
-
-        # Resize the final points
-        final_points = final_points * factor
-
-        position = TicketModifier.positionTicketOnBackground(
-            background, 
-            pil_image)
-        
-        background = TicketModifier.addTicketToBackground(
-            background, 
-            pil_image,
-            final_points, 
-            *position)
-        
-        return background
 
     def save_image(self, image: Image, image_name:str):
         """Save an image to the ground truth folder"""
         path = os.path.join(IMAGE_PATH, image_name+".jpg")
         image.save(path)
 
-class TicketsBackgrounds:
+
+class TicketsWrinkleBackgrounds:
     def __init__(self, path: str):
         path = Path(path)
         self.path = path
@@ -307,6 +241,104 @@ class TicketsBackgrounds:
         # Apply the background with a random alpha channel
         alpha = randint(70, 98) / 100
         return cv2.addWeighted(image, alpha, background, 1-alpha, 0)
+    
+    
+class TicketsBackgrounds:
+    def __init__(self, path:str):
+        self.path = Path(path)
+        # jpg, png and jpeg backgrounds
+        backgrounds = list(self.path.glob('*.jpg')) + list(self.path.glob('*.png')) + list(self.path.glob('*.jpeg'))
+        self.backgrounds = [cv2.imread(str(background)) for background in backgrounds]
+        self.luminance = [
+            np.load(
+                ".".join(
+                    str(background).split('.')[:-1]+['npy']
+                    )
+                ) 
+            for background in backgrounds]
 
+    def addBackground(self, pil_image: Image, final_points: npt.NDArray[np.float32]):
+        """Add a random background to the image."""
+
+        # First we pick a random background from the backgrounds folder
 
         
+        selected = randint(0, len(self.backgrounds)-1)
+        luminance = self.luminance[selected]
+        
+        background = TicketModifier.cv2_to_pil(self.backgrounds[selected])
+
+
+        # Resize the ticket mantaining the aspect ratio to fit background height
+        
+        if pil_image.height > background.height:
+            factor = background.height / pil_image.height
+            pil_image = pil_image.resize(
+                (int(pil_image.width*factor), int(pil_image.height*factor)))
+            final_points = final_points * factor
+
+
+        # Now resize the ticket to a random size between 0.5 and 1
+
+        width, height = pil_image.size
+        factor = randint(4, 8) / 10
+        pil_image = pil_image.resize((int(width*factor), int(height*factor)))
+
+        # Resize the final points
+        final_points = final_points * factor
+
+        position = TicketsBackgrounds.positionTicketOnBackground(
+            background, 
+            pil_image)
+        
+        final_image = TicketsBackgrounds.addTicketToBackground(
+            background, 
+            luminance,
+            pil_image,
+            final_points, 
+            *position)
+        
+        return final_image
+    
+    @staticmethod
+    def positionTicketOnBackground(background, ticket):
+        """Return the center position to place a ticket on a background image without overflows"""
+
+        x = (background.width - ticket.width) // 2
+        y = (background.height - ticket.height) // 2
+        return x, y
+
+    @staticmethod
+    def addTicketToBackground(background: Image, luminance:MatLike, ticket: Image, final_points, x, y):
+        """Add a ticket to a background image
+        
+        Args:
+        - background: PIL.Image, the background image
+        - luminance: npt.NDArray[np.float32], the luminance of the background
+        - ticket: PIL.Image, the ticket image
+        - final_points: npt.NDArray[np.float32], the final points of the ticket,
+        if rotated with TicketModifier.rotateTicket
+        - x: int, x position to place the ticket
+        - y: int, y position to place the ticket
+        """
+        
+        # cv2.imshow('background', TicketModifier.pil_to_cv2(background))
+        # cv2.waitKey(0)
+        mask = TicketModifier.createMask(
+            ticket, 
+            final_points)
+        
+        # Change saturation of the ticket based on the background
+        
+        background_hls = luminance[y:y+ticket.height, x:x+ticket.width]
+        ticket_cv = TicketModifier.pil_to_cv2(ticket)
+        ticket_hls = cv2.cvtColor(ticket_cv, cv2.COLOR_BGR2HLS)
+        
+        alpha = 0.7
+        ticket_hls[:,:,1] = alpha * ticket_hls[:,:,1] + (1-alpha) * background_hls
+        ticket = cv2.cvtColor(ticket_hls, cv2.COLOR_HLS2BGR)
+        ticket = TicketModifier.cv2_to_pil(ticket)
+
+        final_img = background.copy()
+        final_img.paste(im=ticket, box=(x, y), mask=mask)
+        return final_img

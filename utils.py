@@ -4,9 +4,34 @@ from basic import Block, Text
 from json_classes import *
 from random import uniform
 from typing import List
+import cv2
+import numpy as np
 
 FILE_PATH = os.path.dirname(__file__)
 IMAGES = os.path.join(FILE_PATH, 'resources', 'results')
+
+def extractLuminanceFromBackgrounds(background):
+    """Extract the luminance from a background"""
+    
+    background_hls = cv2.cvtColor(background, cv2.COLOR_BGR2HLS)
+    luminance = background_hls[:,:,1]
+    luminance = cv2.GaussianBlur(luminance, (101,101), 200,200)
+        
+    return luminance
+
+def create_background_luminance(backgrounds_path:str):
+    
+    backgrounds = os.listdir(backgrounds_path)
+    backgrounds = [bg for bg in backgrounds if bg.endswith('.png') or bg.endswith('.jpg') or bg.endswith('.jpeg')]
+    
+    for bg_filename in backgrounds:
+        background = cv2.imread(os.path.join(backgrounds_path, bg_filename))
+        luminance = extractLuminanceFromBackgrounds(background)
+        # cv2.imshow('luminance', luminance)
+        # cv2.waitKey(0)
+        bg_filename = ".".join(bg_filename.split('.')[:-1])
+        np.save(os.path.join(backgrounds_path, bg_filename), luminance)
+
 
 def total_subtotal(template, final_blocks):
     """Calculate the total from subtotal if subtotal is given"""
@@ -112,3 +137,6 @@ def read_template(template_path, example_per_template=1000, result_path=IMAGES, 
 
     return to_return
 
+
+if __name__ == "__main__":
+    create_background_luminance(os.path.join(FILE_PATH, 'resources', 'backgrounds'))

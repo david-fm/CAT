@@ -1,7 +1,7 @@
 import os
 import asyncio
 from random import randint, seed
-from basic import TicketModifier, TicketsBackgrounds, Text
+from basic import TicketModifier, TicketsWrinkleBackgrounds, Text, TicketsBackgrounds
 from utils import read_template
 
 
@@ -11,14 +11,15 @@ IMAGES = os.path.join(PATH, 'resources', 'ticketTemplateImages')
 TEMPLATES = os.path.join(PATH, 'resources', 'templates.json')
 RESULTS = os.path.join(PATH, 'resources', 'results')
 BACKGROUND = os.path.join(PATH, 'resources', 'backgrounds')
-TICKET_BACKGROUNDS = os.path.join(PATH, 'resources', 'ticketsBackground')
+TICKET_WRINKLE_BACKGROUNDS = os.path.join(PATH, 'resources', 'ticketsBackground')
 TEXT = os.path.join(PATH, 'resources', 'text.txt')
 
 MAX_ROTATION = 250
 
 
-ticket_backgrounds = TicketsBackgrounds(TICKET_BACKGROUNDS)
+ticket_wrinkle_backgrounds = TicketsWrinkleBackgrounds(TICKET_WRINKLE_BACKGROUNDS)
 text = Text(TEXT)
+ticket_backgrounds = TicketsBackgrounds(BACKGROUND)
 
 async def create_ticket(filename, blocks, output_image_name):
     image_path = os.path.join(IMAGES, filename)
@@ -30,19 +31,18 @@ async def create_ticket(filename, blocks, output_image_name):
     cv_ticket = TicketModifier.pil_to_cv2(ticket_image)
     cv_ticket = TicketModifier.applyGaussianNoise(cv_ticket)
     
-    cv_ticket = ticket_backgrounds.applyRandomBackground(cv_ticket)
+    cv_ticket = ticket_wrinkle_backgrounds.applyRandomBackground(cv_ticket)
 
     final_points, rotated_ticket = TicketModifier.rotateTicket(cv_ticket, MAX_ROTATION)
     pil_rotated_ticket = TicketModifier.cv2_to_pil(rotated_ticket)
 
-    backgrounded_image = ticket.addBackground(
-        pil_rotated_ticket, 
-        BACKGROUND,
+    backgrounded_image = ticket_backgrounds.addBackground(
+        pil_rotated_ticket,
         final_points)
     ticket.save_image(backgrounded_image,output_image_name)
 
 if __name__ == "__main__":
-    templates = read_template(TEMPLATES, result_path=RESULTS, text_ini=text, example_per_template=2)
+    templates = read_template(TEMPLATES, result_path=RESULTS, text_ini=text, example_per_template=4)
     fonts = os.listdir(FONTS)
     seed(3201)
     for filename, blocks, output_image_name in templates:

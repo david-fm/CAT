@@ -13,8 +13,8 @@ IMAGES = os.path.join(FILE_PATH, 'resources', 'results')
 def extractLuminanceFromBackgrounds(background):
     """Extract the luminance from a background"""
     
-    background_hls = cv2.cvtColor(background, cv2.COLOR_BGR2HLS)
-    luminance = background_hls[:,:,1]
+    background_yuv = cv2.cvtColor(background, cv2.COLOR_BGR2YUV)
+    luminance = background_yuv[:,:,0]
     luminance = cv2.GaussianBlur(luminance, (101,101), 200,200)
         
     return luminance

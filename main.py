@@ -42,7 +42,19 @@ async def create_ticket(filename, blocks, output_image_name):
     ticket.save_image(backgrounded_image,output_image_name)
 
 if __name__ == "__main__":
-    templates = read_template(TEMPLATES, result_path=RESULTS, text_ini=text, example_per_template=4)
+    import argparse
+
+    parser = argparse.ArgumentParser(description='Create tickets')
+    parser.add_argument('-e', '--examples', type=int, default=4, help='Number of examples per template')
+    parser.add_argument('-r', '--results', type=str, default=RESULTS, help='Path to save the results')
+    args = vars(parser.parse_args())
+
+    templates = read_template(
+        TEMPLATES, 
+        result_path=RESULTS, 
+        text_ini=text, 
+        example_per_template=args['examples'])
+    
     fonts = os.listdir(FONTS)
     seed(3201)
     for filename, blocks, output_image_name in templates:

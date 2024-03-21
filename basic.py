@@ -194,7 +194,18 @@ class TicketModifier:
         
         final_points = initial_points + movement_matrix
 
+
         perspective_matrix = cv2.getPerspectiveTransform(initial_points, final_points)
+        # Delete small black line around the image by moving the points
+        fix_matrix = np.array(
+            [
+                [4, 4],
+                [4, -4],
+                [-4, 4],
+                [-4, -4]
+            ], dtype=np.float32)
+        
+        final_points = final_points + fix_matrix
         return (final_points, cv2.warpPerspective(
             image, 
             perspective_matrix, 
@@ -270,9 +281,11 @@ class TicketsBackgrounds:
 
 
         # Resize the ticket mantaining the aspect ratio to fit background height
-        
+        factor_size = 0
+
         if pil_image.height > background.height:
             factor = background.height / pil_image.height
+            factor_size = factor
             pil_image = pil_image.resize(
                 (int(pil_image.width*factor), int(pil_image.height*factor)))
             final_points = final_points * factor
@@ -281,8 +294,13 @@ class TicketsBackgrounds:
         # Now resize the ticket to a random size between 0.5 and 1
 
         width, height = pil_image.size
-        factor = randint(4, 8) / 10
-        pil_image = pil_image.resize((int(width*factor), int(height*factor)))
+        factor = randint(7, 10) / 10
+        if factor_size:
+            # print(f"Factor size: {1/factor_size}, factor: {factor}")
+            factor = min(factor*(1/factor_size), 0.95)
+            pil_image = pil_image.resize((int(width*factor), int(height*factor)))
+        else:
+            pil_image = pil_image.resize((int(width*factor), int(height*factor)))
 
         # Resize the final points
         final_points = final_points * factor
@@ -324,19 +342,20 @@ class TicketsBackgrounds:
         
         # cv2.imshow('background', TicketModifier.pil_to_cv2(background))
         # cv2.waitKey(0)
+        
         mask = TicketModifier.createMask(
             ticket, 
             final_points)
         
         # Change saturation of the ticket based on the background
         
-        background_hls = luminance[y:y+ticket.height, x:x+ticket.width]
+        background_yuv = luminance[y:y+ticket.height, x:x+ticket.width]
         ticket_cv = TicketModifier.pil_to_cv2(ticket)
-        ticket_hls = cv2.cvtColor(ticket_cv, cv2.COLOR_BGR2HLS)
+        ticket_yuv = cv2.cvtColor(ticket_cv, cv2.COLOR_BGR2YUV)
         
-        alpha = 0.7
-        ticket_hls[:,:,1] = alpha * ticket_hls[:,:,1] + (1-alpha) * background_hls
-        ticket = cv2.cvtColor(ticket_hls, cv2.COLOR_HLS2BGR)
+        alpha = 0.5
+        ticket_yuv[:,:,0] = alpha * ticket_yuv[:,:,0] + (1-alpha) * background_yuv
+        ticket = cv2.cvtColor(ticket_yuv, cv2.COLOR_YUV2BGR)
         ticket = TicketModifier.cv2_to_pil(ticket)
 
         final_img = background.copy()

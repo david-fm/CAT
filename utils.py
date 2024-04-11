@@ -6,6 +6,7 @@ from random import uniform
 from typing import List
 import cv2
 import numpy as np
+from tqdm import tqdm
 
 FILE_PATH = os.path.dirname(__file__)
 IMAGES = os.path.join(FILE_PATH, 'resources', 'results')
@@ -84,7 +85,9 @@ def read_template(template_path, example_per_template=1000, result_path=IMAGES, 
     with open(template_path) as f:
         templates = json.load(f)
     to_return = []
-    for template in templates:
+
+    print('Creating ticket structures...')
+    for template in tqdm(templates):
         for i in range(example_per_template):
             gt_total = None # Total object for the ground truth
             gt_subtotal = None # Subtotal object for the ground truth
@@ -120,7 +123,7 @@ def read_template(template_path, example_per_template=1000, result_path=IMAGES, 
             # save ground truth to file
             template_name = template.get('name')
             image_file_name = template_name+str(i)+'.jpg'
-            text = json.loads(json_gt)
+            text = json_gt
             metadata = json.dumps({'text': text, 'file_name': image_file_name})
             with open(os.path.join(result_path,'metadata.jsonl'), 'a') as f:
                 f.write(metadata+'\n')

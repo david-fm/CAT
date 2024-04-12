@@ -161,3 +161,4 @@ cython_debug/
 
 # specific folders of the project
 resources/results/*
+.DS_Store

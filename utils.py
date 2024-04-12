@@ -119,7 +119,7 @@ def read_template(template_path, example_per_template=1000, result_path=IMAGES, 
             gt.total = gt_total
             gt.subtotal = gt_subtotal
 
-            json_gt = json.dumps(gt, default=lambda o: o.__dict__, indent=4)
+            json_gt = json.dumps(gt, default=lambda o: o.__dict__)
             # save ground truth to file
             template_name = template.get('name')
             image_file_name = template_name+str(i)+'.jpg'

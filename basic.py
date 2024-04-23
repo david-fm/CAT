@@ -9,6 +9,8 @@ import random
 from scipy import ndimage
 from typing import List
 from polynomials import polynomialModel, lPolynomial2nlPolynomial, maskFromPolygons, pt
+from itertools import tee, islice
+from abc import ABC, abstractmethod
 
 
 
@@ -19,9 +21,16 @@ TYPES = ["text", "price", "quantity", "percentage"]
 
 FILE_PATH = os.path.dirname(__file__)
 IMAGE_PATH = os.path.join(FILE_PATH, 'resources', 'results')
+class Text(ABC):
+    @abstractmethod
+    def __init__(self, path:str, max_words:int=8, min_words:int=2, max_length:int=22):
+        pass
+    @abstractmethod
+    def get_random_text(self, upper:bool=False):
+        pass
 
-class Text:
-    def __init__(self, path:str, max_words:int=10, min_words:int=5, max_length:int=22):
+class FastText(Text):
+    def __init__(self, path:str, max_words:int=8, min_words:int=2, max_length:int=22):
         '''Read a text file and store it in memory
 
         Args:
@@ -33,18 +42,111 @@ class Text:
         self.max_words = max_words
         self.min_words = min_words
         self.max_length = max_length
-        self.path = Path(path)
+        self.path = path
         with open(self.path, "r") as file:
-            self.text = file.read().split(" ")
+            self.text = file.read().split()
     
-    def get_random_text(self):
+    def get_random_text(self, upper:bool=False):
         '''Return a random piece of text from the text file'''
         start = randint(0, len(self.text)-self.max_words)
         end = randint(self.min_words, self.max_words)
+        max_length = self.max_length if not upper else (self.max_length * 3)// 4
 
         text = " ".join(self.text[start:start+end])
-        taken = min(self.max_length, len(text))
-        return text[:taken]
+        taken = min(max_length, len(text))
+        to_return = text[:taken]
+
+        if upper:
+            return to_return.upper()
+        return to_return
+
+class TwoTexts(FastText):
+    def __init__(self, path: str, max_words: int = 8, min_words: int = 2, max_length: int = 22, path2: str=None, weight: float=0.5):
+        """
+        Read two text files and store them in memory.
+        
+        Args:
+        - path2: str, the path to the second text file
+        - weight: the second file will be chosen with this probability"""
+        super().__init__(path, max_words, min_words, max_length)
+        self.path2 = path2
+        self.weight = weight
+        with open(self.path2, "r") as file:
+            self.text2 = file.read().split()
+    
+    def get_random_text(self, upper:bool=False):
+        '''Return a random piece of text from the text file'''
+        if random.random() < self.weight:
+            corpus = self.text
+        else:
+            corpus = self.text2
+        
+        start = randint(0, len(corpus)-self.max_words)
+        end = randint(self.min_words, self.max_words)
+        max_length = self.max_length if not upper else (self.max_length * 3)// 4
+
+        text = " ".join(corpus[start:start+end])
+        taken = min(max_length, len(text))
+        to_return = text[:taken]
+
+        if upper:
+            return to_return.upper()
+        return to_return
+
+
+
+class LowMemoryText(Text):
+    def __init__(self, path:str, max_words:int=10, min_words:int=5, max_length:int=22, length_text:int=0):
+        '''Read a text file and store it in memory
+
+        Args:
+        - path: str, the path to the text file
+        - max_length: int, the maximum length of the text to be gotten from the file
+        - min_length: int, the minimum length of the text to be gotten from the file
+        
+        '''
+        self.max_words = max_words
+        self.min_words = min_words
+        self.max_length = max_length
+        self.path = path
+        self.text = self.text_yield()
+        self.length_text = length_text if length_text else self.length_text()
+        # Length of the text calculation is slow
+        print(self.length_text)
+    
+    
+    def text_yield(self):
+        """lazy read, word by word"""
+        with open(self.path, "r") as file:
+            for line in file:
+                for word in line.split():
+                    yield word
+
+    def length_text(self):
+        """get the length of the text traversing it"""
+        self.text, copy = tee(self.text)
+        return sum(1 for _ in copy)
+    
+    def get_text(self,start,end):
+        '''Return words from the start to the end'''
+        self.text, copy = tee(self.text)
+        return " ".join(list(islice(copy, start, end)))
+    
+
+
+    def get_random_text(self, upper:bool=False):
+        '''Return a random piece of text from the text file'''
+        start = randint(0, self.length_text-self.max_words)
+        end = randint(self.min_words, self.max_words)
+
+        text = self.get_text(start, start+end)
+        taken = min(self.max_length, self.length_text)
+
+        tu_return = text[:taken]
+
+        if upper:
+            return tu_return.upper()
+        return tu_return
 
 # TODO IMPROVEMENT: Total and subtotal blocks should be calculated from prices and percentages blocks.
 
@@ -70,7 +172,8 @@ class Block:
         """Return a random text depending on the type of the block."""
         if self.type == "text":
             if text_init:
-                return text_init.get_random_text(), None
+                is_upper = randint(0, 1)
+                return text_init.get_random_text(is_upper), None
             
             return TEXTS_SAMPLE[randint(0, len(TEXTS_SAMPLE)-1)], None
         elif self.type == "price":
@@ -106,8 +209,9 @@ def random_radius(upper_limit: int, lower_limit: int) -> int:
 class TicketModifier:
     """This class is used to modify the ticket image."""
 
-    def __init__(self, image_path: str):
+    def __init__(self, image_path: str, output_image_path: str):
         self.image_path = image_path
+        self.output_image_path = output_image_path
     
     def modify_image(self, blocks:List[Block], font_path:str, font_size:int=30):
         """Modify the image with the given blocks.
@@ -234,7 +338,7 @@ class TicketModifier:
 
     def save_image(self, image: Image, image_name:str):
         """Save an image to the ground truth folder"""
-        path = os.path.join(IMAGE_PATH, image_name+".jpg")
+        path = os.path.join(self.output_image_path, image_name+".jpg")
         image.save(path)
 
 

@@ -51,9 +51,9 @@ def total_subtotal(template, final_blocks):
     
     construct_total:bool = tax_pos and subtotal_pos
 
-    subtotal_str = subtotal_block.text if subtotal_pos else '0'
-    tax_str = tax_block.text if tax_pos else '0'
-    gt_subtotal = Sub_total(subtotal_str, '0', tax_str, '0')
+    subtotal_str = subtotal_block.text if subtotal_pos else ''
+    tax_str = tax_block.text if tax_pos else ''
+    gt_subtotal = Sub_total(subtotal_str, '', tax_str, '')
 
     total = template.get('total')
     total_block_pos = [tuple(pos) for pos in total]
